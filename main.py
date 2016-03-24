@@ -328,7 +328,7 @@ def format_time(self, milliseconds):
 	h, m = divmod(m, 60)
 	return "%d:%02d:%02d" % (h, m, s)
 
-def start_old():
+def start():
 	global audioplaying, p
 	inp = None
 	last = GPIO.input(button)
@@ -364,7 +364,7 @@ def start_old():
 			if l:
 				audio += data
 
-def start():
+def start_2():
 	global audioplaying, p
 	while True:
 		print("{}Ready to Record.{}".format(bcolors.OKBLUE, bcolors.ENDC))
