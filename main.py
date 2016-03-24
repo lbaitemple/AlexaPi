@@ -38,14 +38,14 @@ audioplaying = False
 debug = 0
 
 class bcolors:
-	HEADER = '\033[95m'
-	OKBLUE = '\033[94m'
-	OKGREEN = '\033[92m'
-	WARNING = '\033[93m'
-	FAIL = '\033[91m'
-	ENDC = '\033[0m'
-	BOLD = '\033[1m'
-	UNDERLINE = '\033[4m'
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 def internet_on():
 	print("Checking Internet Connection...")
@@ -242,7 +242,7 @@ def play_audio(file):
 		p = i.media_player_new()
 		p.set_media(m)
 		mm = m.event_manager()
-		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback) 	# No Worky
+		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback)
 		#mm.event_attach(vlc.EventType.MediaParsedChanged, meta_callback, m)
 		mm.event_attach(vlc.EventType.MediaStateChanged, state_callback, p)
 		audioplaying = True
@@ -328,7 +328,7 @@ def format_time(self, milliseconds):
 	h, m = divmod(m, 60)
 	return "%d:%02d:%02d" % (h, m, s)
 
-def start():
+def start_old():
 	global audioplaying, p
 	inp = None
 	last = GPIO.input(button)
@@ -363,6 +363,31 @@ def start():
 			l, data = inp.read()
 			if l:
 				audio += data
+
+def start():
+	global audioplaying, p
+	while True:
+		print("{}Ready to Record.{}".format(bcolors.OKBLUE, bcolors.ENDC))
+		GPIO.wait_for_edge(button, GPIO.FALLING) # we wait for the button to be pressed
+		if audioplaying: p.stop()
+		print("{}Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
+		GPIO.output(25, GPIO.HIGH)
+		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, device)
+		inp.setchannels(1)
+		inp.setrate(16000)
+		inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+		inp.setperiodsize(500)
+		audio = ""
+		while(GPIO.input(button)==0): # we keep recording while the button is pressed
+			l, data = inp.read()
+			if l:
+				audio += data
+		print("{}Recording Finished.{}".format(bcolors.OKBLUE, bcolors.ENDC))
+		rf = open(path+'recording.wav', 'w')
+		rf.write(audio)
+		rf.close()
+		inp = None
+		alexa_speech_recognizer()
 
 if __name__ == "__main__":
 	GPIO.setwarnings(False)
