@@ -230,7 +230,7 @@ def play_audio(file):
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
 	GPIO.output(24, GPIO.HIGH)
 	#subprocess.Popen(['mpg123', '-q', '{}{}'.format(path, file)]).wait()	
-	i = vlc.Instance('--aout=alsa', '--alsa-audio-device=hw:CARD=ALSA,DEV=0')
+	i = vlc.Instance('--aout=alsa', '--alsa-audio-device=hw:CARD=ALSA,DEV=0')	# This is the line that determines the device in which audio goes out.
 	mrl = ""
 	if file == "response.mp3" or file == "hello.mp3":
 		mrl = "{}{}".format(path, file)
@@ -242,7 +242,7 @@ def play_audio(file):
 		p = i.media_player_new()
 		p.set_media(m)
 		mm = m.event_manager()
-		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback)
+		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback)	# No worky, :(
 		#mm.event_attach(vlc.EventType.MediaParsedChanged, meta_callback, m)
 		mm.event_attach(vlc.EventType.MediaStateChanged, state_callback, p)
 		audioplaying = True
