@@ -17,7 +17,9 @@ import threading
 
 #Settings
 button = 18 		# GPIO Pin with button connected
-lights = [24, 25] 	# GPIO Pins with LED's connected
+plb_light = 24		# GPIO Pin for the playback/activity light
+rec_light = 25		# GPIO Pin for the recording light
+lights = [plb_light, rec_light] 	# GPIO Pins with LED's connected
 device = "plughw:1" # Name of your microphone/sound card in arecord -L
 
 #Setup
@@ -38,14 +40,14 @@ audioplaying = False
 debug = 0
 
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+	HEADER = '\033[95m'
+	OKBLUE = '\033[94m'
+	OKGREEN = '\033[92m'
+	WARNING = '\033[93m'
+	FAIL = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	UNDERLINE = '\033[4m'
 
 def internet_on():
 	print("Checking Internet Connection...")
@@ -75,7 +77,7 @@ def gettoken():
 def alexa_speech_recognizer():
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/speechrecognizer-requests
 	if debug: print("{}Sending Speech Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-	GPIO.output(24, GPIO.HIGH)
+	GPIO.output(plb_light, GPIO.HIGH)
 	url = 'https://access-alexa-na.amazon.com/v1/avs/speechrecognizer/recognize'
 	headers = {'Authorization' : 'Bearer %s' % gettoken()}
 	d = {
@@ -109,7 +111,7 @@ def alexa_speech_recognizer():
 def alexa_getnextitem(nav_token):
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/audioplayer-getnextitem-request
 	if debug: print("{}Sending GetNextItem Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-	GPIO.output(24, GPIO.HIGH)
+	GPIO.output(plb_light, GPIO.HIGH)
 	url = 'https://access-alexa-na.amazon.com/v1/avs/audioplayer/getNextItem'
 	headers = {'Authorization' : 'Bearer %s' % gettoken(), 'content-type' : 'application/json; charset=UTF-8'}
 	d = {
@@ -203,7 +205,7 @@ def process_response(r):
 					if audio != "":
 						with open(path + "response.mp3", 'wb') as f:
 							f.write(audio)
-						GPIO.output(25, GPIO.LOW)
+						GPIO.output(rec_light, GPIO.LOW)
 						play_audio("response.mp3")
 	elif r.status_code == 204:
 		if debug: print("{}Request Response is null {}(This is OKAY!){}".format(bcolors.OKBLUE, bcolors.OKGREEN, bcolors.ENDC))
@@ -213,7 +215,7 @@ def process_response(r):
 		GPIO.output(lights, GPIO.LOW)
 		for x in range(0, 3):
 			time.sleep(.2)
-			GPIO.output(25, GPIO.HIGH)
+			GPIO.output(rec_light, GPIO.HIGH)
 			time.sleep(.2)
 			GPIO.output(lights, GPIO.LOW)
 
@@ -228,9 +230,9 @@ def json_string_value(json_r, item):
 def play_audio(file):
 	global nav_token, p, audioplaying
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
-	GPIO.output(24, GPIO.HIGH)
+	GPIO.output(plb_light, GPIO.HIGH)
 	#subprocess.Popen(['mpg123', '-q', '{}{}'.format(path, file)]).wait()	
-	i = vlc.Instance('--aout=alsa', '--alsa-audio-device=hw:CARD=ALSA,DEV=0')	# This is the line that determines the device in which audio goes out.
+	i = vlc.Instance('--aout=alsa', '--alsa-audio-device=hw:CARD=ALSA,DEV=0')
 	mrl = ""
 	if file == "response.mp3" or file == "hello.mp3":
 		mrl = "{}{}".format(path, file)
@@ -242,7 +244,7 @@ def play_audio(file):
 		p = i.media_player_new()
 		p.set_media(m)
 		mm = m.event_manager()
-		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback)	# No worky, :(
+		#mm.event_attach(vlc.EventType.MediaPlayerTimeChanged, pos_callback)
 		#mm.event_attach(vlc.EventType.MediaParsedChanged, meta_callback, m)
 		mm.event_attach(vlc.EventType.MediaStateChanged, state_callback, p)
 		audioplaying = True
@@ -250,7 +252,7 @@ def play_audio(file):
 		p.play()
 		while audioplaying:
 			continue
-		GPIO.output(24, GPIO.LOW)
+		GPIO.output(plb_light, GPIO.LOW)
 	else:
 		print("(play_audio) mrl = Nothing!")
 
@@ -328,7 +330,7 @@ def format_time(self, milliseconds):
 	h, m = divmod(m, 60)
 	return "%d:%02d:%02d" % (h, m, s)
 
-def start():
+def start_old():
 	global audioplaying, p
 	inp = None
 	last = GPIO.input(button)
@@ -345,7 +347,7 @@ def start():
 				inp = None
 				alexa_speech_recognizer()
 			elif val == 0:
-				GPIO.output(25, GPIO.HIGH)
+				GPIO.output(rec_light, GPIO.HIGH)
 				print("{}Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
 				inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, device)
 				inp.setchannels(1)
@@ -364,14 +366,14 @@ def start():
 			if l:
 				audio += data
 
-def start_2():
+def start():
 	global audioplaying, p
 	while True:
 		print("{}Ready to Record.{}".format(bcolors.OKBLUE, bcolors.ENDC))
 		GPIO.wait_for_edge(button, GPIO.FALLING) # we wait for the button to be pressed
 		if audioplaying: p.stop()
 		print("{}Recording...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-		GPIO.output(25, GPIO.HIGH)
+		GPIO.output(rec_light, GPIO.HIGH)
 		inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NORMAL, device)
 		inp.setchannels(1)
 		inp.setrate(16000)
@@ -402,7 +404,7 @@ if __name__ == "__main__":
 	play_audio("hello.mp3")
 	for x in range(0, 3):
 		time.sleep(.1)
-		GPIO.output(24, GPIO.HIGH)
+		GPIO.output(plb_light, GPIO.HIGH)
 		time.sleep(.1)
-		GPIO.output(24, GPIO.LOW)
+		GPIO.output(plb_light, GPIO.LOW)
 	start()
