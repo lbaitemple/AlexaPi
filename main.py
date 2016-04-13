@@ -110,18 +110,20 @@ def alexa_speech_recognizer():
 
 def alexa_getnextitem(nav_token):
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/audioplayer-getnextitem-request
-	if debug: print("{}Sending GetNextItem Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
-	GPIO.output(plb_light, GPIO.HIGH)
-	url = 'https://access-alexa-na.amazon.com/v1/avs/audioplayer/getNextItem'
-	headers = {'Authorization' : 'Bearer %s' % gettoken(), 'content-type' : 'application/json; charset=UTF-8'}
-	d = {
-		"messageHeader": {},
-		"messageBody": {
-			"navigationToken": nav_token
+	time.sleep(0.5)
+        if audioplaying == False:
+		if debug: print("{}Sending GetNextItem Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
+		GPIO.output(plb_light, GPIO.HIGH)
+		url = 'https://access-alexa-na.amazon.com/v1/avs/audioplayer/getNextItem'
+		headers = {'Authorization' : 'Bearer %s' % gettoken(), 'content-type' : 'application/json; charset=UTF-8'}
+		d = {
+			"messageHeader": {},
+			"messageBody": {
+				"navigationToken": nav_token
+			}
 		}
-	}
-	r = requests.post(url, headers=headers, data=json.dumps(d))
-	process_response(r)
+		r = requests.post(url, headers=headers, data=json.dumps(d))
+		process_response(r)
 	
 def alexa_playback_progress_report_request(requestType, playerActivity, streamid):
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/audioplayer-events-requests
