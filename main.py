@@ -16,7 +16,7 @@ import vlc
 import threading
 
 #Settings
-button = 18 		# GPIO Pin with button connected
+button = 20 		# GPIO Pin with button connected
 plb_light = 24		# GPIO Pin for the playback/activity light
 rec_light = 25		# GPIO Pin for the recording light
 lights = [plb_light, rec_light] 	# GPIO Pins with LED's connected
